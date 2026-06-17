@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Frontend",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://localhost:5176",
+            "webRoot": "${workspaceFolder}/frontend",
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run Backend (uvicorn)",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--reload",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "5176"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Run Full Stack",
+            "configurations": ["Run Backend (uvicorn)", "Launch Frontend"]
+        }
+    ]
+}

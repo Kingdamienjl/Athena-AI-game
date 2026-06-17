@@ -1,0 +1,10 @@
+{
+    "client_id": "test_user_001",
+    "role": "hacker",
+    "level": 1,
+    "hp": 85,
+    "inventory": [
+        "Data Spike"
+    ],
+    "current_objective": "The door down the hall unlocks with a heavy clank. You need to get to the server room before the AEGIS guards realize the power is out."
+}

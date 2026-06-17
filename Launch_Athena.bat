@@ -1,0 +1,13 @@
+@echo off
+echo Starting Athena Universe...
+
+echo Launching Local AI Engine...
+start cmd /k "cd AI_SERVER && koboldcpp.exe --model models\unsloth.Q8_0.gguf --port 5002 --quiet"
+
+echo Launching Python Backend...
+start cmd /k "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8282"
+
+echo Launching Vite Frontend...
+start cmd /k "cd frontend && npm run dev -- --port 5176"
+
+echo All services launched!

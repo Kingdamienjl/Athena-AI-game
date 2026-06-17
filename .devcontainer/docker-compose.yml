@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  # The primary VS Code development container
+  athena-workspace:
+    image: mcr.microsoft.com/devcontainers/universal:2
+    volumes:
+      -..:/workspace:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    ports:
+      - "5173:5173" # React Vite frontend
+      - "8282:8282" # Python FastAPI backend
+
+  # The offline LLM container
+  ollama-llm:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              count: all
+    restart: always
+
+volumes:
+  ollama_storage:

@@ -1,0 +1,28 @@
+{
+    "name": "The Husk",
+    "hp": 550,
+    "stats": {
+        "kinetics": 160,
+        "interface": 60,
+        "logic": 90,
+        "resonance": 170,
+        "empathy": 90,
+        "charisma": 40
+    },
+    "abilities": [
+        "Crimson Tether",
+        "Stage-1 Brute Force"
+    ],
+    "inventory": [],
+    "equipped_weapon": null,
+    "location": "Zenith Spire",
+    "evolution_stage": 1,
+    "level": 1,
+    "xp": 0,
+    "sync_rate": 0,
+    "objective": "Escape the Zenith corporate office before the AEGIS squads arrive.",
+    "lore": "A Husk is a terrifying fusion of man and machine, a being trapped between two worlds. Their bodies are wracked with constant, agonizing transformation, their minds a chaotic battleground of fragmented memories and raw, untamed power.",
+    "backstory": "You were a corporate executive, climbing the ladder at Amane-Tech. Then came the 'promotion' - a forced 'upgrade' into a bio-mechanical horror. You awoke in a chrome and leather office, your body a prison, the alarms blaring your death warrant.",
+    "role_key": "husk",
+    "location_image": "https://cdna.artstation.com/p/assets/images/images/033/039/315/large/alicja-uzarowska-alicjauzarowska-cyberpunk2077-personal-portfolio-2.jpg?1608211902"
+}

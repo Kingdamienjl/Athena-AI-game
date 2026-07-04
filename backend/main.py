@@ -1,88 +1,79 @@
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import asyncio
+from memory import LoreMemory
+from director import evaluate_pacing
+from actor import generate_npc_dialogue
 from game_logic import GameStateManager
-from ai_handler import generate_gm_response
-import json
 
 app = FastAPI()
 
-game_state = GameStateManager()
-chat_history = []
+# Updated CORS matrix to support your new Port 5180+ configuration
+origins = [
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:5174", "http://127.0.0.1:5174",
+    "http://localhost:5176", "http://127.0.0.1:5176",
+    "http://localhost:5180", "http://127.0.0.1:5180",
+    "http://localhost:5181", "http://127.0.0.1:5181",
+    "http://localhost:5182", "http://127.0.0.1:5182",
+    "http://localhost:5183", "http://127.0.0.1:5183",
+    "http://localhost:5184", "http://127.0.0.1:5184",
+    "http://localhost:5185", "http://127.0.0.1:5185",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5176"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: dict[str, WebSocket] = {}
+game_state = GameStateManager()
 
-    async def connect(self, websocket: WebSocket, client_id: str):
-        await websocket.accept()
-        self.active_connections[client_id] = websocket
+class ActionRequest(BaseModel):
+    action_text: str
+    client_id: str
 
-    def disconnect(self, client_id: str):
-        self.active_connections.pop(client_id, None)
+@app.post("/api/take_action")
+async def take_action(request: ActionRequest):
+    lore_memory = LoreMemory()
+    action_str = request.action_text.strip()
 
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections.values():
-            await connection.send_json(message)
+    # Role assignment intercept
+    if action_str.startswith("/role "):
+        target_role = action_str.replace("/role ", "").strip()
+        game_state.assign_role(request.client_id, target_role)
+        player_data = game_state.get_player_data(request.client_id)
+        
+        return {
+            "speaker": "System",
+            "dialogue": f"[SYSTEM: Identity sequence compiled for: {player_data['name']}.]",
+            "player_data": player_data,
+            "img_variant": None # No image for system commands
+        }
 
-    async def send_player_data(self, client_id: str, player_data: dict):
-        websocket = self.active_connections.get(client_id)
-        if websocket:
-            await websocket.send_json({"sender": "PlayerData", "content": player_data})
+    player_data = game_state.get_player_data(request.client_id)
+    if not player_data:
+        game_state.assign_role(request.client_id, 'husk')
+        player_data = game_state.get_player_data(request.client_id)
 
-manager = ConnectionManager()
+    current_npc = player_data.get('current_npc', 'Athena (GM)')
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await manager.connect(websocket, client_id)
-    try:
-        while True:
-            data = await websocket.receive_text()
+    # Core engine flow
+    retrieved_lore = await lore_memory.search_lore(action_str)
+    director_instruction = await evaluate_pacing(action_str, retrieved_lore, player_data.get('objective', ''))
+    dialogue = await generate_npc_dialogue(current_npc, action_str, retrieved_lore, director_instruction)
+    
+    # Process response and extract the image asset key
+    processed_dialogue, updated_player_data, img_variant = game_state.process_ai_response(dialogue, player_data)
+    game_state.save_game(request.client_id)
 
-            player_name = game_state.get_player_name(client_id) or "User"
-            user_message = {"sender": player_name, "content": data}
-            await manager.broadcast(user_message)
-
-            response_message = None
-            if data.startswith("/"):
-                system_msg, hidden_prompt, should_trigger_ai = game_state.process_command(client_id, data)
-                if system_msg:
-                    response_message = {"sender": "System", "content": system_msg}
-                    await manager.broadcast(response_message)
-                if hidden_prompt:
-                    chat_history.append({"sender": "System", "content": hidden_prompt})
-                if data.lower().startswith("/role"):
-                    player_data = game_state.get_player_data(client_id)
-                    if player_data:
-                        await manager.send_player_data(client_id, player_data)
-
-            else:
-                should_trigger_ai = True
-                chat_history.append(user_message)
-
-            if should_trigger_ai:
-                try:
-                    gm_text = await generate_gm_response(chat_history)
-                    gm_response, player_data, image_url = game_state.process_ai_response(gm_text, game_state.get_player_data(client_id))
-                    
-                    gm_message = {"sender": "Athena (GM)", "content": gm_response, "imageUrl": image_url}
-                    chat_history.append(gm_message)
-                    await manager.broadcast(gm_message)
-
-                    if player_data:
-                        await manager.send_player_data(client_id, player_data)
-
-                except Exception as e:
-                    error_message = {"sender": "Athena (GM)", "content": f"[System Error: Cannot connect to local AI instance. Is it running? Details: {e}]"}
-                    await manager.broadcast(error_message)
-
-    except WebSocketDisconnect:
-        manager.disconnect(client_id)
+    # Return structured data to frontend, including the asset variant key
+    return {
+        "speaker": current_npc,
+        "dialogue": processed_dialogue,
+        "player_data": updated_player_data,
+        "img_variant": img_variant 
+    }

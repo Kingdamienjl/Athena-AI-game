@@ -1,77 +1,73 @@
-import React, { useState } from 'react';
-
-interface AiChatProps {
-    clientId: string;
-    playerData: any;
-    onPlayerDataChange: (newPlayerData: any) => void;
-    onLogUpdate: (sender: string, text: string) => void;
-    currentName: string;
-}
-
-export default function AiChat({ clientId, playerData, onPlayerDataChange, onLogUpdate, currentName }: AiChatProps) {
-    const [input, setInput] = useState("");
-    const [showMenu, setShowMenu] = useState(false);
-
-    const sendMessage = async () => {
-        if (!input.trim()) return;
-
-        onLogUpdate(currentName, input);
-        setInput("");
-
-        try {
-            const response = await fetch("http://localhost:8282/api/take_action", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    action_text: input, 
-                    client_id: clientId
-                })
-            });
-            const data = await response.json();
-            
-            onLogUpdate(data.speaker, data.dialogue);
-            
-            if (data.player_data) {
-                onPlayerDataChange(data.player_data);
-            }
-
-        } catch (e) {
-            onLogUpdate("System", "Error connecting to AI.");
-        }
-    };
-
-    return (
-        <div className="relative border-t border-zinc-900 bg-black/50 p-4">
-            <button onClick={() => setShowMenu(!showMenu)} className="absolute -top-10 right-4 z-10 bg-zinc-800 text-xs uppercase tracking-widest px-3 py-1 text-white hover:bg-green-500 hover:text-black transition-colors duration-200">
-                Commands Menu
-            </button>
-            
-            {showMenu && (
-                <div className="absolute inset-0 bg-black/95 p-6 z-20 overflow-y-auto text-white">
-                    <h2 className="text-xl font-bold mb-4 text-cyan-400">Game Commands & Roles</h2>
-                    <p className="mb-2"><strong className="text-cyan-400">Roles:</strong> Husk, Hacker, Dominion, Spider...</p>
-                    <p className="mb-2"><strong className="text-cyan-400">Commands:</strong> /lookaround, /explore, /roll [Stat]</p>
-                    <p className="mt-4 italic text-zinc-400">Tip: You can speak freely to the Game Master.</p>
-                    <button onClick={() => setShowMenu(false)} className="mt-6 bg-green-500 text-black font-bold px-4 py-2 hover:bg-green-400 transition-colors duration-200">Close</button>
-                </div>
-            )}
-
-            <div className="flex items-center bg-zinc-950 border border-zinc-800 focus-within:border-green-500 transition-all duration-200">
-                <input 
-                    type="text" 
-                    value={input} 
-                    onChange={(e) => setInput(e.target.value)} 
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder={`Type your action as ${currentName}...`}
-                    className="flex-1 bg-transparent text-zinc-200 text-sm p-3 outline-none"
-                />
-                <button 
-                    onClick={sendMessage} 
-                    className="text-xs uppercase tracking-widest bg-zinc-800 text-zinc-400 hover:bg-green-500 hover:text-black font-bold p-3 transition-colors duration-200"
-                >
-                    Send
-                </button>
-            </div>
-        </div>
-    );
-}
+// frontend/src/components/AiChat.tsx 
+ import React, { useState } from 'react'; 
+ 
+ export default function AiChat({ clientId, onLogUpdate, currentName }) { 
+     const [isMenuOpen, setIsMenuOpen] = useState(false); 
+ 
+     return ( 
+         <div className="relative h-full flex flex-col bg-zinc-950 text-white font-mono"> 
+             {/* Centralized Command Terminal Modal */} 
+ {isMenuOpen && ( 
+     <div 
+         /* 1. This creates the dark, clickable background that covers the whole screen */ 
+         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" 
+         onClick={() => setIsMenuOpen(false)} 
+     > 
+         <div 
+             /* 2. This is the actual menu box. It stops the click from closing the menu if you click inside it */ 
+             className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-zinc-950 p-6 md:p-8 border-2 border-cyan-800 shadow-[0_0_20px_#0891b2] rounded-md font-mono text-white" 
+             onClick={(e) => e.stopPropagation()} 
+         > 
+             {/* 3. The Top-Right 'X' Close Button */} 
+             <button 
+                 onClick={() => setIsMenuOpen(false)} 
+                 className="absolute top-4 right-6 text-zinc-500 hover:text-cyan-400 text-3xl font-bold leading-none transition-colors" 
+                 aria-label="Close" 
+             > 
+                 &times; 
+             </button> 
+ 
+             <h2 className="text-2xl font-bold uppercase mb-6 text-cyan-400 border-b border-cyan-800/50 pb-3"> 
+                 Athena Universe: Command Terminal 
+             </h2> 
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> 
+                 {/* Example Content Card */} 
+                 <div className="border border-zinc-800 bg-zinc-900/50 p-4 rounded"> 
+                     <h3 className="text-green-400 font-bold mb-1">Husk Stage 1</h3> 
+                     <p className="text-sm text-zinc-300">HP: 550 | Weapon: Rusty Scalpel</p> 
+                     <p className="text-xs text-zinc-500 mt-2">Objective: Evolve</p> 
+                 </div> 
+                 
+                 {/* Commands Reference */} 
+                 <div className="border border-zinc-800 bg-zinc-900/50 p-4 rounded"> 
+                     <h3 className="text-cyan-400 font-bold mb-1">System Commands</h3> 
+                     <ul className="text-sm text-zinc-300 space-y-1"> 
+                         <li><span className="text-yellow-400">/role [name]</span> - Switch character</li> 
+                         <li><span className="text-yellow-400">/help</span> - Open this terminal</li> 
+                     </ul> 
+                 </div> 
+             </div> 
+ 
+             {/* Bottom Close Button for easy access */} 
+             <div className="mt-8 flex justify-end border-t border-zinc-800/50 pt-4"> 
+                 <button 
+                     onClick={() => setIsMenuOpen(false)} 
+                     className="bg-red-900/80 hover:bg-red-700 px-6 py-2 uppercase tracking-wider text-sm font-bold border border-red-500 transition-colors rounded" 
+                 > 
+                     Close Terminal 
+                 </button> 
+             </div> 
+         </div> 
+     </div> 
+ )} 
+             
+             <div className="flex-1 overflow-y-auto p-4"></div> 
+             
+             <div className="p-4 border-t border-zinc-900 flex gap-2"> 
+                 <button onClick={() => setIsMenuOpen(true)} className="bg-zinc-800 px-4 py-2 uppercase text-xs">Terminal</button> 
+                 <input className="flex-1 bg-zinc-900 p-2" placeholder="Enter command..." /> 
+             </div> 
+         </div> 
+     ); 
+ }

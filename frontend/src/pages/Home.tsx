@@ -62,6 +62,8 @@ export default function Home() {
     const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
     const [isReferenceOpen, setIsReferenceOpen] = useState(false);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState('');
     
     // Unified Game Log State holding text history + metadata
     const [gameLog, setGameLog] = useState<LogMessage[]>([
@@ -78,6 +80,19 @@ export default function Home() {
 
     return (
         <div className="flex h-screen w-full bg-black text-green-500 font-mono overflow-hidden select-none">
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-zinc-950 p-6 md:p-8 border-2 border-cyan-800 shadow-[0_0_20px_#0891b2] rounded-md font-mono text-white" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-6 text-zinc-500 hover:text-cyan-400 text-3xl font-bold leading-none transition-colors" aria-label="Close">
+                            &times;
+                        </button>
+                        <div className="text-sm text-zinc-300 space-y-1 whitespace-pre-wrap">
+                            {modalContent}
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             
             {/* MAIN GAMEPLAY PANEL */}
             <div className="flex-grow flex flex-col w-3/4 border-r border-zinc-900 bg-black relative">
@@ -101,15 +116,16 @@ export default function Home() {
 
                 {/* Top Terminal Header */}
                 <div className="flex justify-between items-center p-4 border-b border-zinc-900 bg-black bg-opacity-80 z-10">
+                    
                     <div className="flex gap-4">
                         <button 
-                            onClick={() => alert("Current Objective: " + (playerData ? playerData.objective : 'No objective assigned'))} 
+                            onClick={() => {setModalContent("Current Objective: " + (playerData ? playerData.objective : 'No objective assigned')); setIsModalOpen(true);}} 
                             className="bg-zinc-800 text-white p-2 rounded"
                         > 
                             Objectives 
                         </button> 
                         <button 
-                            onClick={() => alert("Commands: /lookaround, /explore, /roll [skill], /role [name]")} 
+                            onClick={() => {setModalContent("Commands: /lookaround, /explore, /roll [skill], /role [name]"); setIsModalOpen(true);}} 
                             className="bg-zinc-800 text-white p-2 rounded"
                         > 
                             Commands 

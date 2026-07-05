@@ -1,13 +1,8 @@
 @echo off
 echo Starting Athena Universe...
 
-echo Launching Local AI Engine...
-start cmd /k "cd AI_SERVER && koboldcpp.exe --model models\unsloth.Q8_0.gguf --port 5002 --quiet"
+set BASE_DIR=%~dp0
 
-echo Launching Python Backend...
-start cmd /k "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8282"
-
-echo Launching Vite Frontend...
-start cmd /k "cd frontend && npm run dev -- --port 5176"
+start "Athena Universe" wt.exe -w 0 nt --title "AI Engine" -d "%BASE_DIR%Ai Control Center" cmd /k "koboldcpp.exe --model GameBrain\unsloth.Q8_0.gguf --port 5002" ; new-tab --title "Python Backend" -d "%BASE_DIR%backend" cmd /k "uvicorn main:app --port 8282" ; new-tab --title "Vite Frontend" -d "%BASE_DIR%frontend" cmd /k "npm run dev"
 
 echo All services launched!

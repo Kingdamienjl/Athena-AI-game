@@ -2,3 +2,5 @@
 # Ignore AI models
 *.gguf
 *.exe
+.venv/
+__pycache__/

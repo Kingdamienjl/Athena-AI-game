@@ -190,10 +190,10 @@ export default function Home() {
                         <div className="pt-4">
                             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Inventory Ledger</h3>
                             <ul className="text-xs space-y-1 bg-zinc-950 p-2 border border-zinc-950 max-h-32 overflow-y-auto">
-                                {playerData.inventory.length === 0 ? (
+                                {(playerData.inventory || []).length === 0 ? (
                                     <li className="text-zinc-700 italic">Empty register</li>
                                 ) : (
-                                    playerData.inventory.map((item, idx) => (
+                                    (playerData.inventory || []).map((item, idx) => (
                                         <li key={idx} className="text-zinc-300 font-bold">- {item.name.replace(/_/g, ' ')}</li>
                                     ))
                                 )}

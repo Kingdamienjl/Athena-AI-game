@@ -1,25 +1,19 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
-from memory import LoreMemory
-from director import evaluate_pacing
-from actor import generate_npc_dialogue
 from game_logic import GameStateManager
+from ai_handler import get_ai_response # <-- Import the new RAG function
 
 app = FastAPI()
 
-# Updated CORS matrix to support your new Port 5180+ configuration
+# CORS configuration
 origins = [
     "http://localhost:5173", "http://127.0.0.1:5173",
     "http://localhost:5174", "http://127.0.0.1:5174",
     "http://localhost:5176", "http://127.0.0.1:5176",
-    "http://localhost:5180", "http://127.0.0.1:5180",
-    "http://localhost:5181", "http://127.0.0.1:5181",
-    "http://localhost:5182", "http://127.0.0.1:5182",
-    "http://localhost:5183", "http://127.0.0.1:5183",
-    "http://localhost:5184", "http://127.0.0.1:5184",
-    "http://localhost:5185", "http://127.0.0.1:5185",
+    # Add any other ports you might use
 ]
 
 app.add_middleware(
@@ -38,42 +32,44 @@ class ActionRequest(BaseModel):
 
 @app.post("/api/take_action")
 async def take_action(request: ActionRequest):
-    lore_memory = LoreMemory()
     action_str = request.action_text.strip()
 
-    # Role assignment intercept
+    # Handle /role command
     if action_str.startswith("/role "):
+        if game_state.get_player_data(request.client_id):
+            return {
+                "speaker": "System",
+                "dialogue": "Role selection is locked. Start a new session to change characters.",
+                "player_data": game_state.get_player_data(request.client_id)
+            }
+        
         target_role = action_str.replace("/role ", "").strip()
         game_state.assign_role(request.client_id, target_role)
         player_data = game_state.get_player_data(request.client_id)
-        
         return {
             "speaker": "System",
-            "dialogue": f"[SYSTEM: Identity sequence compiled for: {player_data['name']}.]",
-            "player_data": player_data,
-            "img_variant": None # No image for system commands
+            "dialogue": f"Identity confirmed: {player_data.get('name', 'Unknown')}. Welcome to the Athena Universe.",
+            "player_data": player_data
         }
 
+    # Ensure a player exists for the session
     player_data = game_state.get_player_data(request.client_id)
     if not player_data:
-        game_state.assign_role(request.client_id, 'husk')
+        game_state.assign_role(request.client_id, 'husk1') # Default to Husk Stage 1
         player_data = game_state.get_player_data(request.client_id)
 
-    current_npc = player_data.get('current_npc', 'Athena (GM)')
-
-    # Core engine flow
-    retrieved_lore = await lore_memory.search_lore(action_str)
-    director_instruction = await evaluate_pacing(action_str, retrieved_lore, player_data.get('objective', ''))
-    dialogue = await generate_npc_dialogue(current_npc, action_str, retrieved_lore, director_instruction)
+    # --- New Core Logic using RAG --- #
+    # The ai_handler now manages lore retrieval, context injection, and the LLM call.
+    dialogue = await get_ai_response(action_str, player_data)
     
-    # Process response and extract the image asset key
+    # The game_logic processor now primarily handles mechanical changes from AI tags
     processed_dialogue, updated_player_data, img_variant = game_state.process_ai_response(dialogue, player_data)
-    game_state.save_game(request.client_id)
+    
+    game_state.save_game(request.client_id) # Placeholder for future save logic
 
-    # Return structured data to frontend, including the asset variant key
     return {
-        "speaker": current_npc,
+        "speaker": player_data.get('current_npc', 'Athena (GM)'),
         "dialogue": processed_dialogue,
         "player_data": updated_player_data,
-        "img_variant": img_variant 
+        "img_variant": img_variant
     }
